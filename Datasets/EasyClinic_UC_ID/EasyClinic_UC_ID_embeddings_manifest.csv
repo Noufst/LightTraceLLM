@@ -1,0 +1,2 @@
+dataset,embed_model,embedding_dim,n_val,n_test,file
+EasyClinic_UC_ID,sentence-transformers/all-mpnet-base-v2,768,121,240,EasyClinic_UC_ID_embeddings.parquet

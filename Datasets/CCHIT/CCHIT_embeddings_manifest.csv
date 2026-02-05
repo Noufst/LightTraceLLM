@@ -1,0 +1,2 @@
+dataset,embed_model,embedding_dim,n_val,n_test,file
+CCHIT,sentence-transformers/all-mpnet-base-v2,768,2129,4256,CCHIT_embeddings.parquet

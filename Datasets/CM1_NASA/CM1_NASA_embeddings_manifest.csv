@@ -1,0 +1,2 @@
+dataset,embed_model,embedding_dim,n_val,n_test,file
+CM1_NASA,sentence-transformers/all-mpnet-base-v2,768,234,467,CM1_NASA_embeddings.parquet
