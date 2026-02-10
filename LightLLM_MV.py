@@ -2,6 +2,7 @@ import itertools
 import pandas as pd
 from pathlib import Path
 import json
+from tracellm_utils import calculate_f2_metrics, normalize_id_columns, to_binary_label
 
 # =========================
 # User Config (edit here)
@@ -65,50 +66,14 @@ VAL_ART_PATH = ENSEMBLE_DIR / "Light_LLMs_val_artifacts.json"
 # =========================
 # Helpers
 # =========================
-# --- Handle flexible ID column names ---
-POSSIBLE_SRC_ID_COLS = ["source_id", "source_ID", "UC"]
-POSSIBLE_TGT_ID_COLS = ["target_id", "target_ID", "TC", "ID"]
+# Note: Using shared utilities from tracellm_utils.py to avoid code duplication
+# - normalize_id_columns: Standardizes source_id/target_id column names
+# - to_binary_label (aliased as to01): Converts labels to binary 0/1
+# - calculate_f2_metrics (aliased as metrics): Calculates recall, precision, F2
 
-def normalize_id_columns(df):
-    """Standardize column names for source_id and target_id."""
-    df = df.copy()
-    # Detect and rename source_id / UC
-    for c in POSSIBLE_SRC_ID_COLS:
-        if c in df.columns:
-            if c != "source_id":
-                df.rename(columns={c: "source_id"}, inplace=True)
-            break
-    else:
-        raise ValueError(f"Missing required column: expected one of {POSSIBLE_SRC_ID_COLS}")
-
-    # Detect and rename target_id / TC
-    for c in POSSIBLE_TGT_ID_COLS:
-        if c in df.columns:
-            if c != "target_id":
-                df.rename(columns={c: "target_id"}, inplace=True)
-            break
-    else:
-        raise ValueError(f"Missing required column: expected one of {POSSIBLE_TGT_ID_COLS}")
-
-    return df
-
-def to01(x):
-    try:
-        v = int(float(str(x).strip()))
-        return 1 if v == 1 else 0
-    except Exception:
-        return 0
-
-def metrics(y_true, y_pred):
-    tp = ((y_true == 1) & (y_pred == 1)).sum()
-    fp = ((y_true == 0) & (y_pred == 1)).sum()
-    fn = ((y_true == 1) & (y_pred == 0)).sum()
-    precision = tp / (tp + fp) if (tp + fp) else 0.0
-    recall = tp / (tp + fn) if (tp + fn) else 0.0
-    beta2 = 4.0
-    denom = (beta2 * precision) + recall
-    f2 = (1 + beta2) * precision * recall / denom if denom else 0.0
-    return recall, precision, f2
+# Alias for backward compatibility
+to01 = to_binary_label
+metrics = calculate_f2_metrics
 
 def load_run_df_for_model(model_key, run_idx):
     # Map global run_idx (1..25) → (seed_index, local_run 1..5)

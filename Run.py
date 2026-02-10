@@ -3,6 +3,7 @@ import json
 import time
 import argparse
 import random
+from typing import Any
 from pathlib import Path
 
 import pandas as pd
@@ -15,7 +16,12 @@ import Utils
 # Helpers
 # ==============================================================
 
-def set_seeds(seed):
+def set_seeds(seed: int) -> None:
+    """Set random seeds for reproducibility.
+
+    Args:
+        seed: Random seed value
+    """
     try:
         import numpy as np
         random.seed(seed)
@@ -23,16 +29,43 @@ def set_seeds(seed):
     except Exception:
         pass
 
-def decision_to01(d):
+def decision_to01(d: Any) -> int:
+    """Convert decision to binary 0/1 label.
+
+    Args:
+        d: Decision value (various formats accepted)
+
+    Returns:
+        Binary label: 1 or 0
+    """
     s = str(d).strip().lower()
     if s in ("yes", "true", "1"):
         return 1
     return 0
 
-def ensure_int01(series):
+def ensure_int01(series: pd.Series) -> pd.Series:
+    """Ensure series contains only 0/1 integer values.
+
+    Args:
+        series: Input pandas Series
+
+    Returns:
+        Series with values coerced to 0 or 1
+    """
     return pd.to_numeric(series, errors="coerce").fillna(0).astype(int).clip(0,1)
 
-def safe_read_csv(path):
+def safe_read_csv(path: str) -> pd.DataFrame:
+    """Read CSV with automatic encoding detection.
+
+    Tries UTF-8 first, then auto-detects encoding using chardet
+    if UTF-8 fails.
+
+    Args:
+        path: Path to CSV file
+
+    Returns:
+        DataFrame with CSV contents
+    """
     try:
         return pd.read_csv(path)
     except UnicodeDecodeError:

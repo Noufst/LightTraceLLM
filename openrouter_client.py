@@ -1,10 +1,18 @@
 # openrouter_client.py
+from typing import Dict, List, Optional, Any
 from openai import OpenAI
 import os
 import json
 import time
 import traceback
+import yaml
+from pathlib import Path
 import Utils
+
+# Load configuration
+_config_path = Path(__file__).parent / "config.yaml"
+with open(_config_path) as f:
+    CONFIG = yaml.safe_load(f)
 
 
 class OpenRouterClient:
@@ -18,13 +26,19 @@ class OpenRouterClient:
       - total_cost_usd (approximate, based on a simple price table)
     """
 
-    def __init__(self, api_key=None, mode="test", log_file=None):
+    def __init__(
+        self,
+        api_key: Optional[str] = None,
+        mode: str = "test",
+        log_file: Optional[str] = None
+    ) -> None:
         self.client = OpenAI(
             base_url="https://openrouter.ai/api/v1",
             api_key=api_key or os.environ["OPENROUTER_API_KEY"],
         )
 
-        self.max_retries = 10
+        # Load settings from config
+        self.max_retries = CONFIG['api']['max_retries']
         self.mode = mode
         self.log_file = log_file
 
@@ -34,28 +48,27 @@ class OpenRouterClient:
         self.total_tokens = 0
         self.total_cost_usd = 0.0
 
-        # ---- Price table: USD per 1M tokens ----
-    
-        self.model_price_table = {
-            "openai/gpt-4o-mini": {
-                "input": 0.15,     # $0.15 per 1M input tokens
-                "output": 0.60     # $0.60 per 1M output tokens
-            },
-            "mistralai/mistral-7b-instruct": {"input": 0.028, "output": 0.054},
-            "google/gemma-3-12b-it": {"input": 0.03, "output": 0.10},
-            "qwen/qwen-2.5-7b-instruct": {"input": 0.04, "output": 0.10},
-            "microsoft/phi-4-reasoning-plus": {"input": 0.07, "output": 0.35},
-            "deepseek/deepseek-r1-0528-qwen3-8b": {"input": 0.02, "output": 0.10},
-        }
+        # ---- Price table: USD per 1M tokens (loaded from config.yaml) ----
+        self.model_price_table = CONFIG['models']['pricing']
 
     # -------------------------------------------------
     # Cost computation (per 1M tokens)
     # -------------------------------------------------
-    def _estimate_cost(self, model, input_tokens, output_tokens):
-        """
-        Approximate cost in USD for a single call.
-        input_tokens  = tokens you send (prompt)
-        output_tokens = tokens model generates (completion)
+    def _estimate_cost(
+        self,
+        model: str,
+        input_tokens: int,
+        output_tokens: int
+    ) -> float:
+        """Approximate cost in USD for a single call.
+
+        Args:
+            model: Model identifier (e.g., 'openai/gpt-4o-mini')
+            input_tokens: Number of input tokens (prompt)
+            output_tokens: Number of output tokens (completion)
+
+        Returns:
+            Estimated cost in USD
         """
         prices = self.model_price_table.get(model)
         if not prices:
@@ -71,20 +84,32 @@ class OpenRouterClient:
     # -------------------------------------------------
     # Main LLM call
     # -------------------------------------------------
-    def generate_response(self, model, system_role, prompt, examples=None, temperature=0.0):
-        """
-        Generates a response from the given model.
+    def generate_response(
+        self,
+        model: str,
+        system_role: str,
+        prompt: str,
+        examples: Optional[List[Dict[str, str]]] = None,
+        temperature: float = 0.0
+    ) -> Dict[str, Any]:
+        """Generate LLM response via OpenRouter API.
 
-        Returns a dict:
-        {
-          "decision": int,              # 1 / 0 / -1
-          "rationale": str,
-          "raw_response": str,
-          "input_tokens": int,
-          "output_tokens": int,
-          "total_tokens": int,
-          "usd_cost": float
-        }
+        Args:
+            model: Model identifier (e.g., 'openai/gpt-4o-mini')
+            system_role: System prompt defining the task
+            prompt: User prompt with the question
+            examples: Optional few-shot examples
+            temperature: Sampling temperature (0.0 = deterministic)
+
+        Returns:
+            Dictionary containing:
+            - decision (int): 1/0/-1 for yes/no/error
+            - rationale (str): Explanation from model
+            - raw_response (str): Full model response
+            - input_tokens (int): Input token count
+            - output_tokens (int): Output token count
+            - total_tokens (int): Total tokens used
+            - usd_cost (float): Estimated cost in USD
         """
 
         def _build_messages():

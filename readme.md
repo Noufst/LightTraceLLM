@@ -1,78 +1,150 @@
-# Toward Cost-Efficient Automated Requirements Traceability with Large Language Models — Replication Package Guide
+# Cost-Efficient Automated Requirements Traceability with LLMs
+
+> **Research Implementation**: A replication package for cost-efficient requirements traceability using Large Language Models.
 
 ## Overview
 
-This file provides step-by-step instructions for configuring and running LLM-based cost-efficient traceability experiments using the provided Python script. The script enables the setup and execution of experiments with flexible configuration options via command-line arguments.
+This research implements and compares four approaches to automated trace link detection:
+- **TraceLLM**: Baseline using in-context learning with high-end LLMs
+  → [`Run.py`](Run.py)
+- **LightLLM-MV**: Majority voting ensemble of lightweight LLMs
+  → [`LightLLM_MV.py`](LightLLM_MV.py)
+- **LightLLM-HE**: Lightweight LLMs disagreement-based high-end LLM escalation  → [`LightLLM_HE.py`](LightLLM_HE.py)
+- **Embed-HE**: Embedding similarity-based high-end LLM escalation
+  → [`Embed_HE.py`](Embed_HE.py)
 
-This repository contains four runnable files:
+## Quick Start
 
-- **TraceLLM**: Run.py (Used also as ICL of light LLMs)
-- **LightLLM_MV**: LightLLM_MV.py
-- **LightLLM_HE**: LightLLM_HE.py
-- **Embed_HE**: Embed_HE.py
+### Prerequisites
+- Python 3.9+ ([download](https://www.python.org/downloads/))
+- OpenRouter API key ([get one here](https://openrouter.ai/keys))
+- ~500MB disk space for datasets
 
-## Requirements
+### Installation
 
-1. Python: Ensure that Python is installed on your system (preferably version 3.7 or higher).
-2. Required Libraries: Please check requirements.txt
-3. Additional Files: 
-	- Utils.py: Contains utility functions like get_random_samples.
-	- openrouter_client.py: Interface for interacting with the language models.
-	- Evaluation.py: Contains the evaluate_results function for evaluating model responses.
-4. Datasets: Ensure you have the required datasets in the correct file paths.
+1. **Clone the repository**:
+```bash
+git clone <GitHub link>
+cd TraceLLM_Efficient
+```
 
-## **Setup Instructions**
-1. **Directory Structure**:
-    Ensure your project has the following structure:
+2. **Install dependencies**:
+```bash
+pip install -r requirements.txt
+```
 
-    ```
-    project_directory/
-    ├── Datasets/
-    │   └── CM1_NASA/
-    │       ├── CM1_NASA_train_TLC.csv
-    │       ├── CM1_NASA_val_TLC.csv
-    │       ├── CM1_NASA_test_TLC.csv
-    │       ├── CM1_NASA_embeddings.parquet
-    │   └── EasyClinic_UC_TC/
-    │       ├── EasyClinic_UC_TC_train_TLC.csv
-    │       ├── EasyClinic_UC_TC_val_TLC.csv
-    │       ├── EasyClinic_UC_TC_test_TLC.csv
-    │       ├── EasyClinic_UC_TC.parquet
-    │   └── EasyClinic_UC_ID/
-    │       ├── EasyClinic_UC_ID_train_TLC.csv
-    │       ├── EasyClinic_UC_ID_val_TLC.csv
-    │       ├── EasyClinic_UC_ID_test_TLC.csv
-    │       ├── EasyClinic_UC_ID.parquet
-    │   └── CCHIT/
-    │       ├── CCHIT_train_TLC.csv
-    │       ├── CCHIT_val_TLC.csv
-    │       ├── CCHIT_test_TLC.csv
-    │       ├── CCHIT.parquet
-    ├── Results/
-    ├── Utils.py
-    ├── LLMClient.py
-    ├── LightLLM_MV.py
-    ├── LightLLM_HE.py
-    ├── Embed_HE.py
-    ├── Evaluation.py
-    └── Run.py
-    ```
+3. **Download datasets** (see [Datasets](#datasets) section below):
+```bash
+# Option A: Automated download (recommended)
+python download_datasets.py
 
-2. **Environment Setup**:
-	Install required packages if they aren’t already:
-     ```bash
-     pip install <package>
-     ```
+# Option B: Manual download from Figshare
+# Download from: https://figshare.com/s/b212efcec17eaa0c70dd 
+# Extract to project root
+```
 
-3. **API Key Setup**:
-	Set the API key(s) required by Run.py (example):
+4. **Set up API key**:
+```bash
+# Copy environment template
+cp .env.example .env
 
-`export OPENROUTER_API_KEY="..."`
+# Edit .env and add your API key
+# OPENROUTER_API_KEY=your_actual_key_here
+```
+
+5. **Run an experiment** (see [Run Expirements](#run-expirements) section below)
 
 
-## TraceLLM / ICL (Run.py)
+## Project Structure
 
-Generate base predictions for each Light LLM.
+```
+/Cost-Efficient-LLM-Based-Requirements-Traceability
+├── Run.py              # Main ICL code and baseline implementation
+├── LightLLM_MV.py     # Majority voting ensemble of lightweight LLMs
+├── LightLLM_HE.py     # Lightweight LLMs disagreement-based high-end LLM escalation
+├── Embed_HE.py        # Embedding similarity-based high-end LLM escalation
+├── Utils.py           # Utility functions
+├── tracellm_utils.py  # Shared utilities (metrics, prompts)
+├── Evaluation.py      # Performance metrics
+├── Statistical_Test.py # Statistical analysis
+├── openrouter_client.py # LLM API client
+├── config.yaml        # Configuration settings
+├── .env.example       # Environment template
+├── requirements.txt   # Python dependencies
+├── Datasets/          # Input datasets (NOT in git - too large)
+└── Results/           # Experimental outputs (NOT in git)
+```
+
+## Datasets
+
+**⚠️ Important**: Dataset and embedding files are NOT included in this repository due to their large size (~500MB). They are excluded via `.gitignore`.
+
+### Download Datasets
+
+**Option 1: Automated Download (Recommended)**
+```bash
+python download_datasets.py
+```
+
+**Option 2: Manual Download from Figshare**
+
+📊 **Dataset Repository:** [Figshare](https://figshare.com/s/b212efcec17eaa0c70dd)
+
+
+1. Download `TraceLLM_Datasets.zip` from the Figshare link above
+2. Extract the archive to the project root directory
+3. Verify the structure matches below
+
+**Option 3: Use Your Own Datasets**
+- Place your datasets in `Datasets/[dataset_name]/` following the structure below
+- Generate embeddings using your preferred embedding model (e.g., all-mpnet-base-v2)
+- Update paths in scripts if needed
+
+### Expected Directory Structure
+
+After downloading datasets, your directory should look like:
+```
+/Cost-Efficient-LLM-Based-Requirements-Traceability
+├── Datasets/
+│   ├── CCHIT/
+│   │   ├── CCHIT_train_TLC.csv
+│   │   ├── CCHIT_val_TLC.csv
+│   │   ├── CCHIT_test_TLC.csv
+│   │   └── CCHIT_embeddings.parquet
+│   ├── CM1_NASA/
+│   │   ├── CM1_NASA_train_TLC.csv
+│   │   ├── CM1_NASA_val_TLC.csv
+│   │   ├── CM1_NASA_test_TLC.csv
+│   │   └── CM1_NASA_embeddings.parquet
+│   ├── EasyClinic_UC_TC/
+│   │   └── [similar structure]
+│   └── EasyClinic_UC_ID/
+│       └── [similar structure]
+└── Embeddings/
+    ├── CCHIT/
+    │   ├── all-mpnet-base-v2_test_embeddings.csv
+    │   └── all-mpnet-base-v2_train_embeddings.csv
+    └── [other datasets...]
+```
+
+### Dataset Information
+
+The datasets contain trace links between software artifacts:
+- **CCHIT**: Requirements to regulations
+- **CM1_NASA**: High-level requirements to design elements
+- **EasyClinic_UC_TC**: Use cases to test cases
+- **EasyClinic_UC_ID**: Use cases to interaction diagrams
+
+Each dataset includes:
+- Train/validation/test splits for reproducibility
+- Pre-computed embeddings (all-mpnet-base-v2 model)
+- Ground truth trace links (binary labels)
+
+## Run Expirements
+
+### TraceLLM / ICL (Run.py)
+
+Generate predictions for TraceLLM and base predictions for each Light LLM.
 
 Example:
 
@@ -93,7 +165,7 @@ Repeat for other models and seeds.
 Outputs are written under Results/TLC/ and consumed by the ensemble methods.
 
 
-## 3. LightLLM_MV.py 
+### LightLLM_MV.py 
 
 Input: per-run ICL CSVs from multiple Light LLMs.
 
@@ -111,7 +183,7 @@ Outputs:
 - Ensemble results: `Results/TLC/_ensemble/LightLLM_MV/<DATASET>/`
 
 
-## 4. LightLLM_HE.py
+### LightLLM_HE.py
 
 Requires merged outputs from LightLLM_MV.py.
 
@@ -140,7 +212,7 @@ Outputs are written to:
 Run.py is invoked automatically for high-end escalation.
 
 
-## 5. Embed_HE.py
+### Embed_HE.py
 
 Requires:
 

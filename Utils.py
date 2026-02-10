@@ -1,25 +1,26 @@
 import datetime
-import pandas as pd
-from sklearn.model_selection import train_test_split
-from sklearn.model_selection import KFold
-import pandas as pd
-from sklearn.model_selection import train_test_split
 import json
+from typing import Dict, List, Optional, Tuple, Any
 import numpy as np
+import pandas as pd
 from sklearn.metrics.pairwise import cosine_similarity
+from sklearn.model_selection import KFold, train_test_split
 
-def get_random_samples(df, num_samples=2, random_state=None):
-    """
-    Extract random samples from a DataFrame for few-shot learning.
+def get_random_samples(
+    df: pd.DataFrame,
+    num_samples: int = 2,
+    random_state: Optional[int] = None
+) -> Tuple[List[Tuple[str, str]], pd.DataFrame]:
+    """Extract random balanced samples for few-shot learning.
 
-    Parameters:
-    - df (pd.DataFrame): The input DataFrame containing the data.
-    - num_samples_per_label (int): The number of samples to extract for each label (default is 1).
-    - random_state (int, optional): Random seed for reproducibility.
+    Args:
+        df: Training dataframe with 'label' column
+        num_samples: Number of samples to extract (split evenly between labels)
+        random_state: Random seed for reproducibility
 
     Returns:
-    - examples (list of tuples): List of tuples where each tuple contains an example string and its corresponding response.
-    - df (pd.DataFrame): The DataFrame with the extracted rows removed.
+        Tuple of (examples_list, selected_examples_dataframe)
+        where examples is list of (prompt, response) tuples
     """
 
     num_samples_per_label = num_samples // 2
@@ -49,10 +50,7 @@ def get_random_samples(df, num_samples=2, random_state=None):
             "label": "Yes"
         })
 
-    # Remove the extracted rows from the original DataFrame
-    #df = df.drop(random_rows_label_0.index)
-    #df = df.drop(random_rows_label_1.index)
-    #selected_examples_df = pd.DataFrame(selected_examples)
+    # Combine selected examples into DataFrame
     selected_examples_df = pd.concat([random_rows_label_0, random_rows_label_1], ignore_index=True)
 
     return examples, selected_examples_df
@@ -89,15 +87,26 @@ def get_random_samples_imbalanced(df, num_samples=1, random_state=None):
             "label": row["label"]
         })
 
-    # Remove the extracted rows from the original DataFrame
-    #df = df.drop(random_rows_label_0.index)
-    #df = df.drop(random_rows_label_1.index)
-    #selected_examples_df = pd.DataFrame(selected_examples)
-   
-
     return examples, random_rows
 
-def get_diverse_samples(train_df, strategy='sum', num_samples=2):
+def get_diverse_samples(
+    train_df: pd.DataFrame,
+    strategy: str = 'sum',
+    num_samples: int = 2
+) -> Tuple[List[Tuple[str, str]], pd.DataFrame, Optional[List[int]]]:
+    """Extract diverse samples using embedding-based selection.
+
+    Selects examples that maximize diversity in the embedding space,
+    providing better coverage for few-shot learning than random sampling.
+
+    Args:
+        train_df: Training data with embeddings
+        strategy: Selection strategy ('sum', 'max', or 'avg')
+        num_samples: Number of samples to select
+
+    Returns:
+        Tuple of (examples, remaining_df, selected_indices)
+    """
     print("Starting retrieving diverse samples using global scoring approach...")
 
     num_samples_per_label = num_samples // 2

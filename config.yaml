@@ -1,0 +1,43 @@
+# Configuration
+
+# Model Settings
+models:
+  high_end: "openai/gpt-4o-mini"
+
+  # Pricing per 1M tokens (USD)
+  pricing:
+    openai/gpt-4o-mini:
+      input: 0.15
+      output: 0.60
+    mistralai/mistral-7b-instruct:
+      input: 0.028
+      output: 0.054
+    google/gemma-3-12b-it:
+      input: 0.03
+      output: 0.10
+    qwen/qwen-2.5-7b-instruct:
+      input: 0.04
+      output: 0.10
+    microsoft/phi-4-reasoning-plus:
+      input: 0.07
+      output: 0.35
+    deepseek/deepseek-r1-0528-qwen3-8b:
+      input: 0.02
+      output: 0.10
+
+# File Paths (relative to project root)
+paths:
+  datasets: "Datasets"
+  embeddings: "Embeddings"
+  results: "Results"
+  logs: "Log"
+
+# API Settings
+api:
+  max_retries: 10
+  timeout: 120
+
+# Experiment Settings
+experiment:
+  default_temperature: 0.0
+  default_random_seed: 42

@@ -109,11 +109,3 @@ def evaluate_results(results_directory):
     plt.savefig(plot_file, dpi=300)
     plt.close()  # Avoid interruption by closing the figure
     print(f"[INFO] The results bar chart saved as \"{plot_file}\".")
-
-
-# Example usage:
-#evaluate_results("Results/TLC/_similarity/CM1_NASA")
-#evaluate_results("Results/TLC/google/gemma-3-12b-it/diverse/EasyClinic_UC_TC_1764596679_5/role_1_shot_2")
-#evaluate_results("Results/TLC/_ensemble_roles/CM1_NASA/Merged")
-
-#evaluate_results("/Users/nouf/Library/CloudStorage/OneDrive-KFUPM/PhD_Thesis_Nouf/Coding/TraceLLM_Agents/Results/TLC/meta-llama/llama-4-maverick/diverse/EasyClinic_UC_TC_1763383431_1/role_1_shot_2")

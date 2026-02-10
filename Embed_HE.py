@@ -10,6 +10,7 @@ import argparse
 
 import numpy as np
 import pandas as pd
+from tracellm_utils import calculate_f2_metrics, normalize_id_columns, get_system_role_for_dataset
 
 # --------------------------
 # Static Configuration
@@ -17,37 +18,19 @@ import pandas as pd
 RUN_1_PY = "Run.py"
 HIGH_END_MODEL_NAME = "openai/gpt-4o-mini"
 
-# ID column candidates
-SRC_ID_CAND = ["source_id", "source_ID", "UC"]
-TGT_ID_CAND = ["target_id", "target_ID", "TC", "ID"]
-
-
 # --------------------------
 # Utilities
 # --------------------------
+# Note: Using shared utilities from tracellm_utils.py to avoid code duplication
+# - normalize_id_columns (aliased as rename_ids): Standardizes ID column names
+# - calculate_f2_metrics (aliased as metrics): Calculates recall, precision, F2
+# - get_system_role_for_dataset (aliased as system_role): Returns dataset-specific prompts
+
+# Alias for backward compatibility with this file's function names
+rename_ids = normalize_id_columns
+
 def norm_id(x):
     return str(x).strip()
-
-
-def rename_ids(df):
-    df = df.copy()
-    for c in SRC_ID_CAND:
-        if c in df.columns:
-            if c != "source_id":
-                df.rename(columns={c: "source_id"}, inplace=True)
-            break
-    else:
-        raise ValueError("No valid source_id")
-
-    for c in TGT_ID_CAND:
-        if c in df.columns:
-            if c != "target_id":
-                df.rename(columns={c: "target_id"}, inplace=True)
-            break
-    else:
-        raise ValueError("No valid target_id")
-
-    return df
 
 
 def load_split_from_parquet(path, split):
@@ -63,70 +46,9 @@ def load_split_from_parquet(path, split):
     return df
 
 
-def metrics(y_true, y_pred):
-    y_true = np.asarray(y_true)
-    y_pred = np.asarray(y_pred)
-    tp = ((y_true == 1) & (y_pred == 1)).sum()
-    fp = ((y_true == 0) & (y_pred == 1)).sum()
-    fn = ((y_true == 1) & (y_pred == 0)).sum()
-    precision = tp / (tp + fp) if (tp + fp) else 0
-    recall = tp / (tp + fn) if (tp + fn) else 0
-    beta2 = 4.0
-    denom = beta2 * precision + recall
-    f2 = (1 + beta2) * precision * recall / denom if denom else 0
-    return recall, precision, f2
-
-
-def system_role(dataset):
-    ds = dataset.lower()
-
-    # EasyClinic UC–TC
-    if "easyclinic_uc_tc" in ds:
-        return (
-            "You are an expert in software traceability. You are given two artifacts from a healthcare system. "
-            "(1) is a use case and (2) is a test case. Does (2) directly test (1)?\n\n"
-            "Respond strictly in JSON format with the following structure:\n"
-            "{\n"
-            "  'decision': 'yes' or 'no',\n"
-            "  'rationale': '<brief explanation>'\n"
-            "}"
-        )
-
-    # EasyClinic UC–ID
-    if "easyclinic_uc_id" in ds:
-        return (
-            "You are an expert in software traceability. You are given two artifacts from a healthcare system. "
-            "(1) is a use case and (2) is an interaction diagram. Does (2) directly realize (1)?\n\n"
-            "Respond strictly in JSON format with the following structure:\n"
-            "{\n"
-            "  'decision': 'yes' or 'no',\n"
-            "  'rationale': '<brief explanation>'\n"
-            "}"
-        )
-
-    # CCHIT (regulatory / certification requirements)
-    if "cchit" in ds:
-        return (
-            "You are an expert in software traceability. You are given two artifacts from a healthcare system. "
-            "(1) is a requirement and (2) is a regulation. Does (1) directly satisfy (2) ?\n\n"
-            "Respond strictly in JSON format with the following structure:\n"
-            "{\n"
-            "  'decision': 'yes' or 'no',\n"
-            "  'rationale': '<brief explanation>'\n"
-            "}"
-        )
-
-    # CM1 NASA
-    if "cm1" in ds:
-        return (
-            "You are an expert in software traceability. You are given two artifacts from an aerospace system. "
-            "(1) is a high-level requirement and (2) is a design element. Does (2) directly fulfill (1)?\n\n"
-            "Respond strictly in JSON format with the following structure:\n"
-            "{\n"
-            "  'decision': 'yes' or 'no',\n"
-            "  'rationale': '<brief explanation>'\n"
-            "}"
-        )
+# Alias for backward compatibility
+metrics = calculate_f2_metrics
+system_role = get_system_role_for_dataset
 
 
 def call_high_end(input_csv, output_csv, mode, dataset):
