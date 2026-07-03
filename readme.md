@@ -1,6 +1,6 @@
-# Cost-Efficient Automated Requirements Traceability with LLMs
+# LightTraceLLM
 
-> **Research Implementation**: A replication package for cost-efficient requirements traceability using Large Language Models.
+> **Research Implementation**: A replication package of the paper "Toward Cost-Efficient Automated Requirements Traceability with Large Language Models".
 
 ## Overview
 
